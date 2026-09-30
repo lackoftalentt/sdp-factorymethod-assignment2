@@ -9,6 +9,7 @@ public final class CarPlatformFactoryResolver {
             case NISSAN -> new NissanR34Factory();
             case TOYOTA -> new ToyotaSupraFactory();
             case MAZDA -> new MazdaRX7Factory();
+            case MITSUBISHI -> new MitsubishiEvo9Factory();
         };
     }
 }

@@ -38,3 +38,19 @@ All numerical values are illustrative workshop calibrations, not manufacturer sp
 Engine tuning caps boost using both the platform limit and the plan's fraction. The requested power can also be electronically limited below base power. Temperature reduces delivered power, with stronger heat sensitivity for the rotary engine. Track mode lowers ride height and raises grip and brake cooling; drift mode uses platform-specific grip calibration. Novice drivers receive a smaller boost envelope, and novice drift requests are rejected.
 
 Safety combines engine power, mass, suspension handling, driver skill, surface grip, stopping distance and thermal capacity. Thermal load approximates one 140 km/h stop plus power-dependent repeated work over the session, adjusted for temperature. Simulation combines power-to-weight, handling, braking, traction and thermal fade to estimate average speed and lap duration. It returns results even when safety fails, so the report can explain the failure; the CLI returns exit code 2 for such a report.
+
+## Fourth-family extension audit
+
+Commit `54e0c62` introduces Mitsubishi only after the original system checkpoint `7e147a4`. It adds five production files and `MitsubishiExtensionTest.java`; only `config/VehiclePlatform.java` and `config/CarPlatformFactoryResolver.java` were modified. Verify with `git show --name-status 54e0c62`. Neither existing tests nor business algorithms changed for the extension. The existing client test loops over registered platforms, so it automatically includes Mitsubishi.
+
+Mitsubishi has a 527.5 hp full-envelope ceiling, 1.5 bar boost limit, 0.0025/C heat sensitivity, 106 base handling, 145 mm street ride height, 1.12 wet-retention multiplier, 17,500 N brake force, 2,500 kJ base thermal capacity, 1,420 kg mass and 1.16 AWD traction factor. It retains better wet handling than the other calibrations while remaining below its dry handling score.
+
+## SOLID and trade-offs
+
+- Single Responsibility: CLI parses/presents, factories create, products model components, plans choose preparation constraints, and services calculate results.
+- Open/Closed: adding Mitsubishi extends product implementations; preparation, validation and simulation are unchanged. Registration in the enum and resolver is an intentional composition-root modification.
+- Liskov Substitution: concrete products obey the common units, tuning-envelope and configuration contracts.
+- Interface Segregation: ECU, suspension and braking clients receive distinct role-specific interfaces.
+- Dependency Inversion: the Creator uses abstract product/factory/plan contracts. The simple simulation and safety services are concrete collaborators because alternate implementations are not needed here.
+
+The cost is more classes, generic signatures and explicit runtime registration. Abstract Factory makes adding a new family straightforward, but adding a fourth product type would require changing every factory. Factory Method is useful here because each Creator runs the same workflow with a different created plan; it would be unnecessary with a single fixed plan and no expected variation. Public marker contracts prevent accidental mixing of the supplied typed components, not deliberately dishonest third-party implementations.

@@ -1,0 +1,174 @@
+@startuml
+!pragma layout smetana
+title JDM Track Build Configuration System — final architecture
+skinparam packageStyle rectangle
+skinparam classAttributeIconSize 0
+skinparam linetype ortho
+hide empty members
+
+package "Factory Method" #E8F2FF {
+  interface PreparationPlan {
+    +mode(): PreparationMode
+    +boostFraction(requirements): double
+    +validate(requirements): void
+  }
+  abstract class BuildPreparationService <<Creator / AF client>> {
+    #createPreparationPlan(): PreparationPlan
+    +prepare<F>(CarPlatformFactory<F>, requirements, conditions): BuildReport<F>
+  }
+  class StreetPreparationPlan <<Concrete Product>>
+  class StreetBuildPreparationService <<Concrete Creator>>
+  PreparationPlan <|.. StreetPreparationPlan
+  BuildPreparationService <|-- StreetBuildPreparationService
+  StreetBuildPreparationService ..> StreetPreparationPlan : creates
+  class DriftPreparationPlan <<Concrete Product>>
+  class DriftBuildPreparationService <<Concrete Creator>>
+  PreparationPlan <|.. DriftPreparationPlan
+  BuildPreparationService <|-- DriftBuildPreparationService
+  DriftBuildPreparationService ..> DriftPreparationPlan : creates
+  class TrackPreparationPlan <<Concrete Product>>
+  class TrackBuildPreparationService <<Concrete Creator>>
+  PreparationPlan <|.. TrackPreparationPlan
+  BuildPreparationService <|-- TrackBuildPreparationService
+  TrackBuildPreparationService ..> TrackPreparationPlan : creates
+  BuildPreparationService ..> PreparationPlan : creates via override / uses
+}
+
+package "Abstract Factory" #E9F8E9 {
+  interface "CarPlatformFactory<F>" as AF {
+    +createEngineControlUnit(): EngineControlUnit<F>
+    +createSuspensionSystem(): SuspensionSystem<F>
+    +createBrakeSystem(): BrakeSystem<F>
+    +specification(): VehicleSpecification
+  }
+  interface "EngineControlUnit<F>" as ECU {
+    +tuneEngine(hp, fraction): EngineTune
+    +calculatePower(tune, temperature): double
+  }
+  interface "SuspensionSystem<F>" as Suspension {
+    +configureFor(mode, skill): SuspensionSetup
+    +calculateHandlingScore(setup, conditions): double
+  }
+  interface "BrakeSystem<F>" as Brakes {
+    +configureFor(mode): BrakeSetup
+    +calculateBrakingDistance(...): double
+    +validateThermalCapacity(setup, load): boolean
+  }
+  abstract class "CalibratedECU<F>" as BaseECU
+  abstract class "CalibratedSuspension<F>" as BaseSuspension
+  abstract class "CalibratedBrakes<F>" as BaseBrakes
+  ECU <|.. BaseECU
+  Suspension <|.. BaseSuspension
+  Brakes <|.. BaseBrakes
+  AF ..> ECU : creates
+  AF ..> Suspension : creates
+  AF ..> Brakes : creates
+  package "Nissan R34" {
+    class NissanR34Factory
+    class NissanR34ECU
+    class NissanR34Suspension
+    class NissanR34Brakes
+    AF <|.. NissanR34Factory : F = NissanR34Family
+    BaseECU <|-- NissanR34ECU
+    BaseSuspension <|-- NissanR34Suspension
+    BaseBrakes <|-- NissanR34Brakes
+    NissanR34Factory ..> NissanR34ECU : creates
+    NissanR34Factory ..> NissanR34Suspension : creates
+    NissanR34Factory ..> NissanR34Brakes : creates
+  }
+  package "Toyota Supra MK4" {
+    class ToyotaSupraFactory
+    class ToyotaSupraECU
+    class ToyotaSupraSuspension
+    class ToyotaSupraBrakes
+    AF <|.. ToyotaSupraFactory : F = ToyotaSupraFamily
+    BaseECU <|-- ToyotaSupraECU
+    BaseSuspension <|-- ToyotaSupraSuspension
+    BaseBrakes <|-- ToyotaSupraBrakes
+    ToyotaSupraFactory ..> ToyotaSupraECU : creates
+    ToyotaSupraFactory ..> ToyotaSupraSuspension : creates
+    ToyotaSupraFactory ..> ToyotaSupraBrakes : creates
+  }
+  package "Mazda RX-7 FD" {
+    class MazdaRX7Factory
+    class MazdaRX7ECU
+    class MazdaRX7Suspension
+    class MazdaRX7Brakes
+    AF <|.. MazdaRX7Factory : F = MazdaRX7Family
+    BaseECU <|-- MazdaRX7ECU
+    BaseSuspension <|-- MazdaRX7Suspension
+    BaseBrakes <|-- MazdaRX7Brakes
+    MazdaRX7Factory ..> MazdaRX7ECU : creates
+    MazdaRX7Factory ..> MazdaRX7Suspension : creates
+    MazdaRX7Factory ..> MazdaRX7Brakes : creates
+  }
+  package "Mitsubishi Evo IX — later extension" {
+    class MitsubishiEvo9Factory
+    class MitsubishiEvo9ECU
+    class MitsubishiEvo9Suspension
+    class MitsubishiEvo9Brakes
+    AF <|.. MitsubishiEvo9Factory : F = MitsubishiEvo9Family
+    BaseECU <|-- MitsubishiEvo9ECU
+    BaseSuspension <|-- MitsubishiEvo9Suspension
+    BaseBrakes <|-- MitsubishiEvo9Brakes
+    MitsubishiEvo9Factory ..> MitsubishiEvo9ECU : creates
+    MitsubishiEvo9Factory ..> MitsubishiEvo9Suspension : creates
+    MitsubishiEvo9Factory ..> MitsubishiEvo9Brakes : creates
+  }
+}
+package "Typed domain" #FFF4D8 {
+  interface PlatformFamily
+  class NissanR34Family
+  class ToyotaSupraFamily
+  class MazdaRX7Family
+  class MitsubishiEvo9Family
+  PlatformFamily <|.. NissanR34Family
+  PlatformFamily <|.. ToyotaSupraFamily
+  PlatformFamily <|.. MazdaRX7Family
+  PlatformFamily <|.. MitsubishiEvo9Family
+  class "CarBuild<F>" as Build <<record>>
+  class "BuildReport<F>" as Report <<record>>
+  class PerformanceResult <<record>>
+  class SafetyResult <<record>>
+  Build --> ECU : ecu / same F
+  Build --> Suspension : suspension / same F
+  Build --> Brakes : brakes / same F
+  Report *-- Build
+  Report *-- PerformanceResult
+  PerformanceResult *-- SafetyResult
+}
+package "Client / business services" #F5E8FF {
+  class ConsoleApplication <<UI client>>
+  class CarPlatformFactoryResolver <<composition root>>
+  class PreparationServiceResolver <<composition root>>
+  class TrackSimulationService {
+    +simulateTrackSession(build, conditions): PerformanceResult
+  }
+  class SafetyValidationService {
+    +performSafetyValidation(build, conditions): SafetyResult
+  }
+  ConsoleApplication ..> CarPlatformFactoryResolver : resolves from CLI
+  ConsoleApplication ..> PreparationServiceResolver
+  CarPlatformFactoryResolver ..> AF : resolves wildcard factory
+  PreparationServiceResolver ..> BuildPreparationService : selects creator
+  ConsoleApplication ..> BuildPreparationService : prepare / wildcard capture
+  ConsoleApplication ..> Report : prints
+  BuildPreparationService ..> AF : requests compatible components
+  BuildPreparationService ..> Build : creates
+  BuildPreparationService ..> Report : creates
+  BuildPreparationService ..> TrackSimulationService
+  TrackSimulationService --> SafetyValidationService
+  TrackSimulationService ..> Build : uses all three products
+  SafetyValidationService ..> Build : checks all three products
+}
+note bottom of Build
+  F extends PlatformFamily on products, factories and build.
+  Invariant generic types reject mixed-family construction.
+  Every concrete product binds its platform's exact F.
+end note
+note bottom of BuildPreparationService
+  Plan validation -> component creation -> tuning/setup ->
+  typed build -> safety + simulation -> report.
+  Factory Method selects a plan; Abstract Factory selects a family.
+end note
+@enduml

@@ -1,10 +1,11 @@
 package org.example;
 
-import org.example.jdm.legacy.LegacyBuildConfigurator;
+import org.example.jdm.app.ConsoleApplication;
 
 public final class Main {
     private Main() { }
     public static void main(String[] args) {
-        System.out.println(new LegacyBuildConfigurator().configure("nissan"));
+        int status = new ConsoleApplication().run(args, System.out, System.err);
+        if (status != 0) System.exit(status);
     }
 }
